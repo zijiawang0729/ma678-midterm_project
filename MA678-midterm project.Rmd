@@ -7,7 +7,7 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-pacman::p_load(ggplot2,rstanarm,tidyverse,lme4,colorspace,scales,glmnet())
+pacman::p_load(ggplot2,rstanarm,tidyverse,lme4,colorspace,scales,glmnet)
 ```
 
 #Data Cleaning
@@ -123,8 +123,8 @@ normalize <- function(x) {
   attr(x, 'normalized:max') = maxAttr
   return (x)
 } 
-df4 <- normalize(df3[3:13]) %>% 
-  as.data.frame(df4)
+df4 <- normalize(df3[3:13]) 
+df4 <- as.data.frame(df4)
 df5 <- df3 %>% 
   select(-c(3:13)) %>% 
   mutate(df4)
@@ -150,10 +150,10 @@ redmodel <- lm(salary ~ meal + water + transport + gasoline + internet + cinema 
 summary(redmodel)
 anova(redmodel,fullmodel)
 ```
-## Full model is better than reduced model.
+## we can accept reduced model, becuase the F .....
 
 ```{r}
-m2 <- lmer(salary ~ meal + water + cigarettes + transport + gasoline + internet + cinema + education + clothing + rent + (1 | region), data = df5)
+m2 <- lmer(salary ~ meal + water + transport + gasoline + internet + cinema + education + rent + (1 | region), data = df5)
 summary(m2)
 ```
 
