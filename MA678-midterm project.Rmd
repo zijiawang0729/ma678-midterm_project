@@ -1,0 +1,159 @@
+---
+title: "MA678_Midterm"
+author: "Zijia Wang"
+date: "2022-12-04"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(ggplot2,rstanarm,tidyverse,lme4,colorspace,scales,glmnet())
+```
+
+#Data Cleaning
+```{r}
+df1 <- read.csv("~/Desktop/MSSP/MA678/ma678-midterm_project/cost-of-living.csv")
+df1 <- df1 %>% 
+  rename("salary" = "x54",
+         "region" = "country") %>% 
+  select(-X, -data_quality) %>% 
+  na.omit()
+```
+
+```{r}
+##select the countries that have more than 10 cities
+table(df1$region)
+df2 <- df1 %>% filter(      region=="China" |
+                            region=="Greece" |
+                            region=="Indonesia" |
+                            region=="Japan" | 
+                            region=="Malaysia"|
+                            region=="Mexico"| 
+                            region=="Morocco"| 
+                            region=="Netherlands"|
+                            region=="Pakistan"| 
+                            region=="Turkey"| 
+                            region=="Australia"| 
+                            region=="Brazil"| 
+                            region=="Colombia"| 
+                            region=="Egypt"| 
+                            region=="Finland"| 
+                            region=="Germany"| 
+                            region=="Hungary"| 
+                            region=="Israel"|  
+                            region=="Philippines"| 
+                            region=="Romania"| 
+                            region=="Spain"| 
+                            region=="United Kingdom"|
+                            region=="Canada"| 
+                            region=="France"|
+                            region=="Italy"| 
+                            region=="Norway"| 
+                            region=="Poland"| 
+                            region=="Russia"| 
+                            region=="Serbia"| 
+                            region=="Sweden"| 
+                            region=="United States"|
+                            region=="Belgium"| 
+                            region=="Bulgaria"| 
+                            region=="Portugal"| 
+                            region=="Switzerland"| 
+                            region=="Ukraine")  
+df2 <- df2[,c(1,2,56,3:55,57)]
+```
+
+## using Lasso Regression to chose variables
+```{r}
+
+#define response variable
+y <- df2$salary
+
+#define matrix of predictor variables
+x <- data.matrix(df2[, 4:57])
+```
+
+```{r}
+library(glmnet)
+
+#perform k-fold cross-validation to find optimal lambda value
+cv_model <- cv.glmnet(x, y, alpha = 1)
+
+#find optimal lambda value that minimizes test MSE
+best_lambda <- cv_model$lambda.min
+best_lambda
+
+#produce plot of test MSE by lambda value
+plot(cv_model) 
+```
+
+```{r}
+#find coefficients of best model
+best_model <- glmnet(x, y, alpha = 1, lambda = best_lambda)
+coef(best_model)
+```
+
+## Hence, the variables x1, x6, x7, x8, x9, x10, x11, x12, x15, x18, x19, x22, x25, x27, x28, x31, x32, x33, x35, x37, x38, x39, x41, x42, x43, x44, x47, x48, x49 and x51. However, they are many variables having the same meaning, so I will chose 10 independent variables to represent them.
+
+```{r}
+df3 <- df2 %>% select("city","region","salary","x1","x8","x27","x28","x33","x38","x41","x42","x47","x48") %>% 
+  rename("meal" = "x1",
+         "water" = "x8",
+         "cigarettes" = "x27",
+         "transport" = "x28",
+         "gasoline" = "x33",
+         "internet" = "x38",
+         "cinema" = "x41",
+         "education" = "x42",
+         "clothing" = "x47",
+         "rent" = "x48")
+```
+
+```{r}
+summary(df3)
+```
+
+```{r}
+normalize <- function(x) { 
+  x <- as.matrix(x)
+  minAttr=apply(x, 2, min)
+  maxAttr=apply(x, 2, max)
+  x <- sweep(x, 2, minAttr, FUN="-") 
+  x=sweep(x, 2,  maxAttr-minAttr, "/") 
+  attr(x, 'normalized:min') = minAttr
+  attr(x, 'normalized:max') = maxAttr
+  return (x)
+} 
+df4 <- normalize(df3[3:13]) %>% 
+  as.data.frame(df4)
+df5 <- df3 %>% 
+  select(-c(3:13)) %>% 
+  mutate(df4)
+```
+
+## EDA
+```{r}
+ggplot(data = df3,mapping = aes(x=region,
+                                     y=salary, color = factor(region)))+
+  theme(axis.text.x=element_text(angle=90, hjust=1))+
+  geom_point()
+```
+
+## Full model vs Reduced model
+```{r}
+fullmodel <- lm(salary ~ meal + water + cigarettes + transport + gasoline + internet + cinema + education + clothing + rent, data = df5)
+summary(fullmodel)
+par(mfrow = c(2, 2))
+plot(fullmodel)
+```
+```{r}
+redmodel <- lm(salary ~ meal + water + transport + gasoline + internet + cinema + education + rent, data = df5)
+summary(redmodel)
+anova(redmodel,fullmodel)
+```
+## Full model is better than reduced model.
+
+```{r}
+m2 <- lmer(salary ~ meal + water + cigarettes + transport + gasoline + internet + cinema + education + clothing + rent + (1 | region), data = df5)
+summary(m2)
+```
+
