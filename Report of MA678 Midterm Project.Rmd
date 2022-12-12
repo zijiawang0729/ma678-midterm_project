@@ -1,0 +1,13 @@
+---
+title: "Report of MA678 Midterm Project"
+author: "Zijia Wang"
+date: "2022-12-06"
+output: pdf_document
+---
+Abstract
+Introduction
+Method
+Result
+Discussion
+Reference
+
